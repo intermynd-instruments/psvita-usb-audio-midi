@@ -1,0 +1,7 @@
+/build/
+*.vpk
+*.self
+*.skprx
+*.suprx
+*.a
+*.o

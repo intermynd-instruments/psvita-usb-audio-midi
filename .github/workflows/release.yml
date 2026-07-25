@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag to create (for example, v0.1)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: vitasdk/vitasdk:latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          apk add --no-cache cmake make
+          vdpm sdl2
+
+      - name: Build Vita plugin
+        run: make vita
+
+      - name: Verify release asset
+        run: test -f build/vita/psvita_usb_audio_midi.skprx
+
+      - name: Upload kernel plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: psvita_usb_audio_midi
+          path: build/vita/psvita_usb_audio_midi.skprx
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+
+    steps:
+      - name: Validate release tag
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+(\.[0-9]+)*([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Release tag must look like v0.1 or v1.2.3."
+            exit 1
+          fi
+
+      - name: Download kernel plugin
+        uses: actions/download-artifact@v4
+        with:
+          name: psvita_usb_audio_midi
+          path: release
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          files: release/psvita_usb_audio_midi.skprx
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          make_latest: true

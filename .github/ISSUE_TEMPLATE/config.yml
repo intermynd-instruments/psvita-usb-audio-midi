@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Intermynd Instruments Discord
+    url: https://discord.gg/SGtAZqPVV
+    about: Discuss early ideas, testing, DS-8, and other Intermynd Instruments projects.
+  - name: Vita Hacks Guide
+    url: https://vita.hacks.guide/
+    about: Get help with Vita homebrew setup, VitaShell, and general plugin installation.

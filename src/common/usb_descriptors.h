@@ -1,0 +1,73 @@
+#ifndef PSVITA_USB_AUDIO_MIDI_DESCRIPTORS_H
+#define PSVITA_USB_AUDIO_MIDI_DESCRIPTORS_H
+
+#include "psvita_usb_audio_midi.h"
+
+#include <stddef.h>
+#include <stdint.h>
+
+#define PSVITA_USB_AUDIO_CONTROL_EXTRA_SIZE 52u
+#define PSVITA_USB_AUDIO_STREAM_EXTRA_SIZE 18u
+#define PSVITA_USB_AUDIO_ENDPOINT_EXTRA_SIZE 9u
+#define PSVITA_USB_MIDI_STREAM_EXTRA_SIZE 37u
+#define PSVITA_USB_MIDI_ENDPOINT_EXTRA_SIZE 7u
+#define PSVITA_USB_INTERFACE_COUNT 4u
+#define PSVITA_USB_INTERFACE_DESCRIPTOR_COUNT 6u
+
+/* Configuration + six interfaces + four endpoints and their class data. */
+#define PSVITA_USB_AUDIO_MIDI_CONFIG_TOTAL_LENGTH \
+	(9u + \
+	 PSVITA_USB_INTERFACE_DESCRIPTOR_COUNT * 9u + \
+	 PSVITA_USB_AUDIO_CONTROL_EXTRA_SIZE + \
+	 2u * PSVITA_USB_AUDIO_STREAM_EXTRA_SIZE + \
+	 2u * (7u + PSVITA_USB_AUDIO_ENDPOINT_EXTRA_SIZE) + \
+	 PSVITA_USB_MIDI_STREAM_EXTRA_SIZE + \
+	 2u * (7u + PSVITA_USB_MIDI_ENDPOINT_EXTRA_SIZE))
+#define PSVITA_USB_AUDIO_CONTROL_INTERFACE 0u
+#define PSVITA_USB_AUDIO_STREAM_INTERFACE 1u
+#define PSVITA_USB_AUDIO_INPUT_STREAM_INTERFACE 2u
+#define PSVITA_USB_MIDI_STREAM_INTERFACE 3u
+#define PSVITA_USB_AUDIO_IN_ENDPOINT_ADDRESS 0x83u
+#define PSVITA_USB_AUDIO_OUT_ENDPOINT_ADDRESS 0x04u
+#define PSVITA_USB_MIDI_OUT_ENDPOINT_ADDRESS 0x01u
+#define PSVITA_USB_MIDI_IN_ENDPOINT_ADDRESS 0x82u
+#define PSVITA_USB_AUDIO_ENDPOINT_ATTRIBUTES 0x05u
+#define PSVITA_USB_AUDIO_INPUT_ENDPOINT_ATTRIBUTES 0x09u
+#define PSVITA_USB_AUDIO_MAX_PACKET_BYTES 960u
+#define PSVITA_USB_AUDIO_INPUT_MAX_PACKET_BYTES 196u
+#define PSVITA_USB_AUDIO_FULL_SPEED_INTERVAL 1u
+#define PSVITA_USB_AUDIO_HIGH_SPEED_INTERVAL 4u
+#define PSVITA_USB_AUDIO_DRIVER_ENDPOINT 3u
+#define PSVITA_USB_AUDIO_INPUT_DRIVER_ENDPOINT 4u
+#define PSVITA_USB_MIDI_OUT_DRIVER_ENDPOINT 1u
+#define PSVITA_USB_MIDI_IN_DRIVER_ENDPOINT 2u
+/* SceUdcdDriver.numEndpoints includes endpoint zero. Keep this independent
+ * from the number of string descriptors: confusing the two is kernel-fatal. */
+#define PSVITA_USB_UDCD_ENDPOINT_COUNT 5u
+#define PSVITA_USB_STRING_DESCRIPTOR_COUNT 12u
+/* Flat descriptor storage follows interface serialization, not driver slots. */
+#define PSVITA_USB_AUDIO_DESCRIPTOR_ENDPOINT_INDEX 0u
+#define PSVITA_USB_AUDIO_INPUT_DESCRIPTOR_ENDPOINT_INDEX 1u
+#define PSVITA_USB_MIDI_OUT_DESCRIPTOR_ENDPOINT_INDEX 2u
+#define PSVITA_USB_MIDI_IN_DESCRIPTOR_ENDPOINT_INDEX 3u
+
+extern const uint8_t psvita_usb_audio_control_extra[
+	PSVITA_USB_AUDIO_CONTROL_EXTRA_SIZE];
+extern const uint8_t psvita_usb_audio_as_extra[
+	PSVITA_USB_AUDIO_STREAM_EXTRA_SIZE];
+extern const uint8_t psvita_usb_audio_input_as_extra[
+	PSVITA_USB_AUDIO_STREAM_EXTRA_SIZE];
+extern const uint8_t psvita_usb_audio_in_extra[
+	PSVITA_USB_AUDIO_ENDPOINT_EXTRA_SIZE];
+extern const uint8_t psvita_usb_audio_out_extra[
+	PSVITA_USB_AUDIO_ENDPOINT_EXTRA_SIZE];
+extern const uint8_t psvita_usb_midi_ms_extra[
+	PSVITA_USB_MIDI_STREAM_EXTRA_SIZE];
+extern const uint8_t psvita_usb_midi_out_extra[
+	PSVITA_USB_MIDI_ENDPOINT_EXTRA_SIZE];
+extern const uint8_t psvita_usb_midi_in_extra[
+	PSVITA_USB_MIDI_ENDPOINT_EXTRA_SIZE];
+
+int psvita_usb_audio_midi_validate_descriptor_layout(void);
+
+#endif

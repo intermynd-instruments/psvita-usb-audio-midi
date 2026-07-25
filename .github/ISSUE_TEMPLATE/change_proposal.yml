@@ -1,0 +1,69 @@
+name: Change proposal
+description: Discuss an idea and its scope before writing code
+title: "[Proposal] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form to discuss a change before implementation. Please wait for a maintainer to explicitly agree on the scope and approach before opening a pull request. Discussion does not guarantee acceptance.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before proposing
+      options:
+        - label: I searched existing issues and documentation for this idea.
+          required: true
+        - label: I have not started a substantial implementation or prepared a pull request.
+          required: true
+        - label: I understand that the project has a narrow scope and the proposal may be declined.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: Describe the concrete problem, who encounters it, and why the current behavior is insufficient
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the smallest change that would address the problem
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include workarounds or approaches that do not require changing the plugin
+    validations:
+      required: true
+
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Safety and compatibility impact
+      description: Consider USB ownership, MTP restoration, MIDI compatibility, latency, kernel safety, API compatibility, and Vita models
+    validations:
+      required: true
+
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Are you offering to implement this?
+      options:
+        - No, this is an idea for discussion
+        - Yes, after the scope and approach are accepted
+        - I can help test or document it
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Supporting information
+      description: Link specifications, measurements, prior art, logs, or related projects

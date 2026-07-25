@@ -1,0 +1,102 @@
+name: Bug report
+description: Report a reproducible plugin, USB audio, or USB MIDI problem
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping test the plugin. Kernel and USB problems depend heavily on the exact setup, so please provide as much detail as possible.
+
+        For suspected security vulnerabilities, do not continue with this public form. Follow the repository security policy instead.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for the same problem.
+          required: true
+        - label: I followed the documented installation and compatibility instructions.
+          required: true
+        - label: This is not a request for general Vita homebrew support.
+          required: true
+
+  - type: input
+    id: plugin_build
+    attributes:
+      label: Plugin version or build
+      description: Release tag, commit, build ID, or filename used
+      placeholder: "v0.1.0, commit abc1234, or build ID"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: vita_model
+    attributes:
+      label: Vita model
+      options:
+        - Vita 1000
+        - Vita 2000
+        - PlayStation TV
+        - Other or unknown
+    validations:
+      required: true
+
+  - type: input
+    id: vita_software
+    attributes:
+      label: Firmware and homebrew environment
+      description: Include firmware version and relevant taiHEN or Ensō details
+      placeholder: "3.60 Ensō"
+    validations:
+      required: true
+
+  - type: textarea
+    id: host_setup
+    attributes:
+      label: Host setup
+      description: Host OS, DAW or application, audio settings, USB connection, and any adapters or hubs
+      placeholder: "macOS version, Ableton Live version, buffer size, direct USB connection..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Provide the shortest reliable sequence that demonstrates the problem
+      placeholder: |
+        1. Start...
+        2. Connect...
+        3. Enable...
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Paste relevant logs, measurements, or Scope diagnostic output. Do not include secrets or personal information.
+      render: shell
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Frequency, regressions, workarounds, screenshots, or other useful context
+
+  - type: checkboxes
+    id: risk
+    attributes:
+      label: Safety acknowledgement
+      options:
+        - label: I understand this is experimental kernel software and have read the safety and recovery notes.
+          required: true

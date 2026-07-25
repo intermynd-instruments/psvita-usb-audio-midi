@@ -1,0 +1,29 @@
+psvita_usb_audio_midi_c:
+  attributes: 0
+  process_image: false
+  imagemodule: false
+  version:
+    major: 2
+    minor: 0
+  main:
+    start: module_start
+    stop: module_stop
+  libraries:
+    PsvitaUsbAudioMidiClient:
+      syscall: false
+      functions:
+        - psvitaUsbAudioMidiClientLoad: 0xE24A8BC1
+        - psvitaUsbAudioMidiGetApiVersion: 0x73D4EF09
+        - psvitaUsbAudioMidiAcquire: 0xC9E3B4F2
+        - psvitaUsbAudioMidiRelease: 0xA83BD116
+        - psvitaUsbMidiRead: 0x5847CDE0
+        - psvitaUsbMidiReadWait: 0xB3E2597C
+        - psvitaUsbMidiWrite: 0x1F6A297C
+        - psvitaUsbAudioMidiGetStatus: 0xD28C064B
+        - psvitaUsbAudioMidiGetDiagnostics: 0x61B8A7D2
+        - psvitaUsbAudioSetEnabled: 0x0DDA3AD1
+        - psvitaUsbAudioWrite: 0xB99574E8
+        - psvitaUsbAudioWriteMulti: 0x6C2D8F10
+        - psvitaUsbAudioGetStatus: 0x503A9B43
+        - psvitaUsbAudioInputRead: 0x9F74B3C2
+        - psvitaUsbAudioGetInputStatus: 0x2A6D18F5

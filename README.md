@@ -34,7 +34,7 @@ synth, sampler, and performance groovebox from
 MIDI clock and transport, ten-channel audio capture, and stereo audio playback
 over one USB connection.
 
-[![Watch DS-8 Dreamstream using USB audio and MIDI](https://img.youtube.com/vi/CkVb2TvM700/hqdefault.jpg)](https://youtu.be/CkVb2TvM700?si=0CL32LiEQnGtQigj)
+[![Watch DS-8 Dreamstream using USB audio and MIDI](https://img.youtube.com/vi/NL-XpDzZxXg/hqdefault.jpg)](https://youtu.be/NL-XpDzZxXg?si=N5JW_nPFB9l5mg_B)
 
 [Learn more about DS-8](https://intermynd-instruments.com/ds8.html) or
 [download it from Itch.io](https://intermynd-instruments.itch.io/ds-8).

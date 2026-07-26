@@ -6,14 +6,16 @@
  * streaming output terminal (2). The host playback stream enters at USB
  * streaming terminal (3) and leaves through the Vita speaker terminal (4).
  * FL/FR describe the master pair; Track 1-8 are the eight undefined channels
- * named by string descriptors 4-11. The AudioControl collection lists only
- * its two AudioStreaming interfaces; MIDIStreaming remains independent.
+ * named by string descriptors 4-11. The AudioControl collection owns both
+ * AudioStreaming interfaces and the MIDIStreaming interface so hosts bind
+ * the complete USB Audio class function.
  */
 const uint8_t psvita_usb_audio_control_extra[
 	PSVITA_USB_AUDIO_CONTROL_EXTRA_SIZE] = {
-	10, 0x24, 0x01, 0x00, 0x01, PSVITA_USB_AUDIO_CONTROL_EXTRA_SIZE, 0, 2,
+	11, 0x24, 0x01, 0x00, 0x01, PSVITA_USB_AUDIO_CONTROL_EXTRA_SIZE, 0, 3,
 		PSVITA_USB_AUDIO_STREAM_INTERFACE,
 		PSVITA_USB_AUDIO_INPUT_STREAM_INTERFACE,
+		PSVITA_USB_MIDI_STREAM_INTERFACE,
 	12, 0x24, 0x02, 1, 0x03, 0x06, 0, 10, 0x03, 0x00, 4, 0,
 	9, 0x24, 0x03, 2, 0x01, 0x01, 0, 1, 0,
 	12, 0x24, 0x02, 3, 0x01, 0x01, 0, 2, 0x03, 0x00, 0, 0,
@@ -92,7 +94,7 @@ int psvita_usb_audio_midi_validate_descriptor_layout(void)
 	const uint32_t audio_input_bytes = 49u * PSVITA_USB_AUDIO_INPUT_CHANNELS *
 		(PSVITA_USB_AUDIO_BITS_PER_SAMPLE / 8u);
 
-	return PSVITA_USB_AUDIO_MIDI_CONFIG_TOTAL_LENGTH == 248u &&
+	return PSVITA_USB_AUDIO_MIDI_CONFIG_TOTAL_LENGTH == 249u &&
 		PSVITA_USB_UDCD_ENDPOINT_COUNT ==
 			PSVITA_USB_AUDIO_INPUT_DRIVER_ENDPOINT + 1u &&
 		PSVITA_USB_INTERFACE_COUNT == 4u &&
@@ -127,11 +129,13 @@ int psvita_usb_audio_midi_validate_descriptor_layout(void)
 			sizeof(psvita_usb_midi_in_extra), 2u) &&
 		psvita_usb_audio_control_extra[5] ==
 			sizeof(psvita_usb_audio_control_extra) &&
-		psvita_usb_audio_control_extra[7] == 2u &&
+		psvita_usb_audio_control_extra[7] == 3u &&
 		psvita_usb_audio_control_extra[8] ==
 			PSVITA_USB_AUDIO_STREAM_INTERFACE &&
 		psvita_usb_audio_control_extra[9] ==
 			PSVITA_USB_AUDIO_INPUT_STREAM_INTERFACE &&
+		psvita_usb_audio_control_extra[10] ==
+			PSVITA_USB_MIDI_STREAM_INTERFACE &&
 		psvita_usb_audio_as_extra[11] ==
 			PSVITA_USB_AUDIO_STREAM_CHANNELS &&
 		psvita_usb_audio_input_as_extra[11] ==

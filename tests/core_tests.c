@@ -152,7 +152,7 @@ static int test_serialized_configuration(uint16_t midi_packet_size,
 static int test_descriptors(void)
 {
 	CHECK(psvita_usb_audio_midi_validate_descriptor_layout());
-	CHECK(PSVITA_USB_AUDIO_MIDI_CONFIG_TOTAL_LENGTH == 248u);
+	CHECK(PSVITA_USB_AUDIO_MIDI_CONFIG_TOTAL_LENGTH == 249u);
 	CHECK(PSVITA_USB_UDCD_ENDPOINT_COUNT == 5u);
 	CHECK(PSVITA_USB_INTERFACE_COUNT == 4u);
 	CHECK(PSVITA_USB_INTERFACE_DESCRIPTOR_COUNT == 6u);
@@ -179,13 +179,14 @@ static int test_descriptors(void)
 	CHECK(PSVITA_USB_AUDIO_INPUT_DESCRIPTOR_ENDPOINT_INDEX == 1u);
 	CHECK(PSVITA_USB_MIDI_OUT_DESCRIPTOR_ENDPOINT_INDEX == 2u);
 	CHECK(PSVITA_USB_MIDI_IN_DESCRIPTOR_ENDPOINT_INDEX == 3u);
-	CHECK(psvita_usb_audio_control_extra[0] == 10u);
-	CHECK(psvita_usb_audio_control_extra[7] == 2u);
+	CHECK(psvita_usb_audio_control_extra[0] == 11u);
+	CHECK(psvita_usb_audio_control_extra[7] == 3u);
 	CHECK(psvita_usb_audio_control_extra[8] == PSVITA_USB_AUDIO_STREAM_INTERFACE);
 	CHECK(psvita_usb_audio_control_extra[9] == PSVITA_USB_AUDIO_INPUT_STREAM_INTERFACE);
-	CHECK(psvita_usb_audio_control_extra[17] == 10u);
-	CHECK(psvita_usb_audio_control_extra[18] == 0x03u);
-	CHECK(psvita_usb_audio_control_extra[20] == 4u);
+	CHECK(psvita_usb_audio_control_extra[10] == PSVITA_USB_MIDI_STREAM_INTERFACE);
+	CHECK(psvita_usb_audio_control_extra[18] == 10u);
+	CHECK(psvita_usb_audio_control_extra[19] == 0x03u);
+	CHECK(psvita_usb_audio_control_extra[21] == 4u);
 	CHECK(psvita_usb_audio_as_extra[11] == 10u);
 	CHECK(psvita_usb_audio_as_extra[13] == 16u);
 	CHECK(psvita_usb_audio_input_as_extra[3] == 3u);

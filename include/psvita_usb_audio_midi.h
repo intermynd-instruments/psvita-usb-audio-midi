@@ -7,9 +7,9 @@
 extern "C" {
 #endif
 
-#define PSVITA_USB_AUDIO_MIDI_API_VERSION 0x00020000u
+#define PSVITA_USB_AUDIO_MIDI_API_VERSION 0x00030000u
 #define PSVITA_USB_AUDIO_MIDI_DIAGNOSTICS_VERSION 0x00020000u
-#define PSVITA_USB_AUDIO_MIDI_BUILD_ID 0x26072601u
+#define PSVITA_USB_AUDIO_MIDI_BUILD_ID 0x26081003u
 #define PSVITA_USB_AUDIO_PROTOCOL_VERSION 0x00010010u
 #define PSVITA_USB_AUDIO_SAMPLE_RATE 48000u
 /* The original write call remains stereo for source compatibility. The USB
@@ -273,6 +273,10 @@ typedef struct {
 	uint32_t endpoint_received_bytes;
 	int32_t requested_alternate;
 	int32_t applied_alternate;
+	uint32_t last_completion_gap_us;
+	uint32_t maximum_completion_gap_us;
+	uint32_t last_rearm_delay_us;
+	uint32_t maximum_rearm_delay_us;
 } PsvitaUsbAudioInputStatus;
 
 int psvitaUsbAudioMidiClientLoad(const char *suprx_path);
@@ -286,6 +290,8 @@ int psvitaUsbMidiWrite(const PsvitaUsbMidiEvent *events, uint32_t count);
 int psvitaUsbAudioMidiGetStatus(PsvitaUsbAudioMidiStatus *status);
 int psvitaUsbAudioMidiGetDiagnostics(PsvitaUsbAudioMidiDiagnostics *diagnostics);
 int psvitaUsbAudioSetEnabled(int enabled);
+int psvitaUsbAudioSetOutputEnabled(int enabled);
+int psvitaUsbAudioSetInputEnabled(int enabled);
 int psvitaUsbAudioWrite(const int16_t *interleaved_stereo, uint32_t frames,
 	uint32_t sample_rate);
 int psvitaUsbAudioWriteMulti(const int16_t *interleaved, uint32_t frames,

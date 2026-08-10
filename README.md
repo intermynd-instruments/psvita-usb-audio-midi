@@ -28,13 +28,13 @@ takeover.
 ## Built for DS-8
 
 This plugin was created for
-[DS-8 Dreamstream](https://intermynd-instruments.com/ds8.html), the PS Vita drum
+[DS-8 Drumstream](https://intermynd-instruments.com/ds8.html), the PS Vita drum
 synth, sampler, and performance groovebox from
 [Intermynd Instruments](https://intermynd-instruments.com/). DS-8 uses it for
 MIDI clock and transport, ten-channel audio capture, and stereo audio playback
 over one USB connection.
 
-[![Watch DS-8 Dreamstream using USB audio and MIDI](https://img.youtube.com/vi/NL-XpDzZxXg/hqdefault.jpg)](https://youtu.be/NL-XpDzZxXg?si=N5JW_nPFB9l5mg_B)
+[![Watch DS-8 Drumstream using USB audio and MIDI](https://img.youtube.com/vi/NL-XpDzZxXg/hqdefault.jpg)](https://youtu.be/NL-XpDzZxXg?si=N5JW_nPFB9l5mg_B)
 
 [Learn more about DS-8](https://intermynd-instruments.com/ds8.html) or
 [download it from Itch.io](https://intermynd-instruments.itch.io/ds-8).
@@ -176,7 +176,8 @@ int usb_start(void)
 
 int usb_stop(void)
 {
-    psvitaUsbAudioSetEnabled(0);
+    psvitaUsbAudioSetOutputEnabled(0);
+    psvitaUsbAudioSetInputEnabled(0);
     return psvitaUsbAudioMidiRelease();
 }
 ```
@@ -188,9 +189,13 @@ show `PSVITA_USB_AUDIO_MIDI_ERROR_BUSY`,
 indefinitely. Always release explicitly when leaving USB mode.
 
 MIDI clients use `psvitaUsbMidiReadWait()` and `psvitaUsbMidiWrite()`. Audio
-clients call `psvitaUsbAudioSetEnabled(1)`, send exactly ten channels of 48 kHz
-S16 audio with `psvitaUsbAudioWriteMulti()`, and receive stereo host audio with
-`psvitaUsbAudioInputRead()`. See [the protocol notes](docs/PROTOCOL.md) and
+clients independently enable Vita-to-host output with
+`psvitaUsbAudioSetOutputEnabled(1)` and host-to-Vita input with
+`psvitaUsbAudioSetInputEnabled(1)`. Output clients send exactly ten channels of
+48 kHz S16 audio with `psvitaUsbAudioWriteMulti()`; input clients receive stereo
+host audio with `psvitaUsbAudioInputRead()`. The older
+`psvitaUsbAudioSetEnabled()` call remains as a compatibility shortcut that
+changes both directions. See [the protocol notes](docs/PROTOCOL.md) and
 [audio notes](docs/AUDIO.md) for event formats, channel order, buffering, and
 status records.
 

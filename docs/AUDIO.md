@@ -31,16 +31,22 @@ application must resample or convert its audio before calling the plugin.
 1. Load `psvita_usb_audio_midi_client.suprx` and check
    `PSVITA_USB_AUDIO_MIDI_API_VERSION`.
 2. Acquire `PSVITA_USB_AUDIO_MIDI_ACQUIRE_REPLACE_MTP`.
-3. Call `psvitaUsbAudioSetEnabled(1)`.
-4. Feed Vita output with
+3. Enable the direction or directions the application needs with
+   `psvitaUsbAudioSetOutputEnabled(1)` and/or
+   `psvitaUsbAudioSetInputEnabled(1)`.
+4. If output is enabled, feed Vita output with
    `psvitaUsbAudioWriteMulti(pcm, frames, 48000, 10)`.
-5. Read host playback with `psvitaUsbAudioInputRead()`.
-6. Disable audio or release the shared MIDI/audio lease.
+5. If input is enabled, read host playback with `psvitaUsbAudioInputRead()`.
+6. Disable the enabled directions or release the shared MIDI/audio lease.
 
 Writes accept 1–512 frames. `psvitaUsbAudioWrite()` remains available for
 stereo callers; it writes master L/R and clears the eight track channels.
 `psvitaUsbAudioInputRead()` returns up to 512 complete stereo frames and does
 not pad the return count with silence.
+
+`psvitaUsbAudioSetEnabled()` remains available for compatibility and toggles
+both directions together. Output and input status are otherwise independent;
+disabling one direction does not reset or stop the other.
 
 The syscalls copy user memory into bounded kernel buffers. They briefly lock
 plugin state, so a real-time audio callback should normally publish to an
@@ -77,8 +83,10 @@ and discard buffered input.
 
 `PsvitaUsbAudioStatus` and `PsvitaUsbAudioInputStatus` expose endpoint state,
 buffer occupancy, packet counts, transfer errors, disconnects, and timing
-diagnostics. Both records are append-only: callers set the leading `size` field
-and the kernel copies no more than that size.
+diagnostics. The input record includes completion-gap and request-rearm maxima
+so an app can distinguish irregular host packets from delayed kernel servicing.
+Both records are append-only: callers set the leading `size` field and the
+kernel copies no more than that size.
 
 ## References
 

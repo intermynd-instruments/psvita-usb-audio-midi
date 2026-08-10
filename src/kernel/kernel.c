@@ -556,7 +556,11 @@ int kscePsvitaUsbMidiWrite(const PsvitaUsbMidiEvent *user_events, uint32_t count
 			diagnostics.tx_filtered_events++;
 			continue;
 		}
-		if (!psvita_usb_midi_ring_push(&tx_ring, &events[i])) {
+		if (events[i].size == 1u &&
+		    (events[i].data[0] == 0xfau || events[i].data[0] == 0xfbu ||
+		     events[i].data[0] == 0xfcu))
+			scheduled_tx_valid = 0;
+		if (!psvita_usb_midi_tx_ring_push(&tx_ring, &events[i])) {
 			status.tx_dropped++;
 			continue;
 		}
@@ -593,6 +597,50 @@ done:
 	return result;
 }
 
+int kscePsvitaUsbAudioSetOutputEnabled(int enabled)
+{
+	unsigned long syscall_state;
+	int result = 0;
+	ENTER_SYSCALL(syscall_state);
+	if (enabled != 0 && enabled != 1) {
+		result = PSVITA_USB_AUDIO_MIDI_ERROR_FLAGS;
+		goto done;
+	}
+	lock_state();
+	if (owner_pid != ksceKernelGetProcessId())
+		result = PSVITA_USB_AUDIO_MIDI_ERROR_NOT_OWNER;
+	else if (status.state != PSVITA_USB_AUDIO_MIDI_STATE_ACTIVE)
+		result = PSVITA_USB_AUDIO_MIDI_ERROR_NOT_READY;
+	else
+		midi_usb_audio_set_output_enabled(enabled);
+	unlock_state();
+done:
+	EXIT_SYSCALL(syscall_state);
+	return result;
+}
+
+int kscePsvitaUsbAudioSetInputEnabled(int enabled)
+{
+	unsigned long syscall_state;
+	int result = 0;
+	ENTER_SYSCALL(syscall_state);
+	if (enabled != 0 && enabled != 1) {
+		result = PSVITA_USB_AUDIO_MIDI_ERROR_FLAGS;
+		goto done;
+	}
+	lock_state();
+	if (owner_pid != ksceKernelGetProcessId())
+		result = PSVITA_USB_AUDIO_MIDI_ERROR_NOT_OWNER;
+	else if (status.state != PSVITA_USB_AUDIO_MIDI_STATE_ACTIVE)
+		result = PSVITA_USB_AUDIO_MIDI_ERROR_NOT_READY;
+	else
+		midi_usb_audio_set_input_enabled(enabled);
+	unlock_state();
+done:
+	EXIT_SYSCALL(syscall_state);
+	return result;
+}
+
 static int16_t audio_write_scratch[PSVITA_USB_AUDIO_MAX_WRITE_FRAMES *
 	PSVITA_USB_AUDIO_STREAM_CHANNELS] __attribute__((aligned(64)));
 
@@ -617,7 +665,7 @@ static int usb_audio_writer_ready_locked(void)
 	if (owner_pid != ksceKernelGetProcessId())
 		return PSVITA_USB_AUDIO_MIDI_ERROR_NOT_OWNER;
 	if (status.state != PSVITA_USB_AUDIO_MIDI_STATE_ACTIVE ||
-	    !midi_usb_audio_enabled())
+	    !midi_usb_audio_output_enabled())
 		return PSVITA_USB_AUDIO_MIDI_ERROR_NOT_READY;
 	return 0;
 }
@@ -746,7 +794,7 @@ int kscePsvitaUsbAudioInputRead(int16_t *user_interleaved,
 	if (owner_pid != ksceKernelGetProcessId()) {
 		result = PSVITA_USB_AUDIO_MIDI_ERROR_NOT_OWNER;
 	} else if (status.state != PSVITA_USB_AUDIO_MIDI_STATE_ACTIVE ||
-	           !midi_usb_audio_enabled()) {
+	           !midi_usb_audio_input_enabled()) {
 		result = PSVITA_USB_AUDIO_MIDI_ERROR_NOT_READY;
 	} else {
 		result = (int)midi_usb_audio_input_read(audio_input_read_scratch,

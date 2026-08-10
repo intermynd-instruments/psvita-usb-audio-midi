@@ -69,6 +69,14 @@ int psvitaUsbAudioSetEnabled(int enabled)
 {
 	return kscePsvitaUsbAudioSetEnabled(enabled);
 }
+int psvitaUsbAudioSetOutputEnabled(int enabled)
+{
+	return kscePsvitaUsbAudioSetOutputEnabled(enabled);
+}
+int psvitaUsbAudioSetInputEnabled(int enabled)
+{
+	return kscePsvitaUsbAudioSetInputEnabled(enabled);
+}
 int psvitaUsbAudioWrite(const int16_t *interleaved_stereo, uint32_t frames,
 	uint32_t sample_rate)
 {

@@ -23,6 +23,8 @@ typedef struct {
 void psvita_usb_midi_ring_init(PsvitaUsbMidiRing *ring);
 int psvita_usb_midi_ring_push(PsvitaUsbMidiRing *ring,
 					 const PsvitaUsbMidiEvent *event);
+int psvita_usb_midi_tx_ring_push(PsvitaUsbMidiRing *ring,
+					 const PsvitaUsbMidiEvent *event);
 uint32_t psvita_usb_midi_ring_pop(PsvitaUsbMidiRing *ring,
 					 PsvitaUsbMidiEvent *events, uint32_t capacity);
 

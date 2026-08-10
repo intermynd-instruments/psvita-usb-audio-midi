@@ -635,8 +635,10 @@ static int test_audio_input_ring_and_api_contract(void)
 	      PSVITA_USB_AUDIO_INPUT_MAX_READ_FRAMES, output,
 	      PSVITA_USB_AUDIO_INPUT_MAX_READ_FRAMES + 1u,
 	      PSVITA_USB_AUDIO_INPUT_CHANNELS, mock_audio_copy, &copy) < 0);
-	CHECK(sizeof(PsvitaUsbAudioInputStatus) == 120u);
+	CHECK(sizeof(PsvitaUsbAudioInputStatus) == 136u);
 	CHECK(offsetof(PsvitaUsbAudioInputStatus, applied_alternate) == 116u);
+	CHECK(offsetof(PsvitaUsbAudioInputStatus, last_completion_gap_us) == 120u);
+	CHECK(offsetof(PsvitaUsbAudioInputStatus, maximum_rearm_delay_us) == 132u);
 	return 0;
 }
 
@@ -897,6 +899,42 @@ static int test_ring_wrap_and_overflow(void)
 	      PSVITA_USB_MIDI_RING_CAPACITY);
 	CHECK(all[0].timestamp_us == 64u);
 	CHECK(all[PSVITA_USB_MIDI_RING_CAPACITY - 1u].timestamp_us == 319u);
+	return 0;
+}
+
+static int test_transport_supersedes_scheduled_tx_clocks(void)
+{
+	PsvitaUsbMidiRing ring;
+	PsvitaUsbMidiEvent event;
+	memset(&event, 0, sizeof(event));
+	event.size = 1u;
+	psvita_usb_midi_ring_init(&ring);
+
+	/* Model a large audio callback that queued clocks well into the future. */
+	event.data[0] = 0xf8u;
+	for (uint32_t i = 0; i < 4u; ++i) {
+		event.timestamp_us = 1020833u + i * 20833u;
+		CHECK(psvita_usb_midi_tx_ring_push(&ring, &event));
+	}
+	/* STOP must be the only remaining event, rather than waiting behind those
+	 * clocks and allowing them to arrive in a burst. */
+	event.data[0] = 0xfcu;
+	event.timestamp_us = 1010000u;
+	CHECK(psvita_usb_midi_tx_ring_push(&ring, &event));
+	CHECK(ring.count == 1u);
+	PsvitaUsbMidiEvent output[2];
+	CHECK(psvita_usb_midi_ring_pop(&ring, output, 2u) == 1u);
+	CHECK(output[0].data[0] == 0xfcu);
+
+	/* START likewise replaces anything left from the stopped generation. */
+	event.data[0] = 0xf8u;
+	event.timestamp_us = 1030000u;
+	CHECK(psvita_usb_midi_tx_ring_push(&ring, &event));
+	event.data[0] = 0xfau;
+	event.timestamp_us = 1020000u;
+	CHECK(psvita_usb_midi_tx_ring_push(&ring, &event));
+	CHECK(psvita_usb_midi_ring_pop(&ring, output, 2u) == 1u);
+	CHECK(output[0].data[0] == 0xfau);
 	return 0;
 }
 
@@ -1266,6 +1304,7 @@ int main(void)
 	if (test_scope_streaming_render_budget()) return 1;
 	if (test_parser_and_filtering()) return 1;
 	if (test_ring_wrap_and_overflow()) return 1;
+	if (test_transport_supersedes_scheduled_tx_clocks()) return 1;
 	if (test_encode_and_bounds()) return 1;
 	if (test_timestamp_deadlines_and_latency_histogram()) return 1;
 	if (test_dead_owner_watchdog()) return 1;

@@ -3,7 +3,7 @@ psvita_usb_audio_midi_c:
   process_image: false
   imagemodule: false
   version:
-    major: 2
+    major: 3
     minor: 0
   main:
     start: module_start
@@ -22,6 +22,8 @@ psvita_usb_audio_midi_c:
         - psvitaUsbAudioMidiGetStatus: 0xD28C064B
         - psvitaUsbAudioMidiGetDiagnostics: 0x61B8A7D2
         - psvitaUsbAudioSetEnabled: 0x0DDA3AD1
+        - psvitaUsbAudioSetOutputEnabled: 0xC5834AF0
+        - psvitaUsbAudioSetInputEnabled: 0xDA9B7261
         - psvitaUsbAudioWrite: 0xB99574E8
         - psvitaUsbAudioWriteMulti: 0x6C2D8F10
         - psvitaUsbAudioGetStatus: 0x503A9B43

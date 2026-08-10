@@ -18,6 +18,20 @@ int psvita_usb_midi_ring_push(PsvitaUsbMidiRing *ring,
 	return 1;
 }
 
+int psvita_usb_midi_tx_ring_push(PsvitaUsbMidiRing *ring,
+	const PsvitaUsbMidiEvent *event)
+{
+	if (!ring || !event) return 0;
+	/* START, CONTINUE, and STOP supersede clock look-ahead from the previous
+	 * transport state. Otherwise those future events hold the transport edge
+	 * behind them and are emitted as a burst when their deadlines expire. */
+	if (event->size == 1u &&
+	    (event->data[0] == 0xfau || event->data[0] == 0xfbu ||
+	     event->data[0] == 0xfcu))
+		psvita_usb_midi_ring_init(ring);
+	return psvita_usb_midi_ring_push(ring, event);
+}
+
 uint32_t psvita_usb_midi_ring_pop(PsvitaUsbMidiRing *ring,
 					 PsvitaUsbMidiEvent *events, uint32_t capacity)
 {

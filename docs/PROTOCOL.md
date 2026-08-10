@@ -51,6 +51,11 @@ protocol is version `0x00010010`.
 `psvitaUsbAudioWrite()` call is kept for source compatibility and zero-fills the
 track channels.
 
+Applications can enable the two audio directions independently with
+`psvitaUsbAudioSetOutputEnabled()` and `psvitaUsbAudioSetInputEnabled()`.
+`psvitaUsbAudioSetEnabled()` is retained as a compatibility call that applies
+the same state to both directions.
+
 The audio status records are append-only. A caller sets the leading `size`
 field; the kernel copies at most that many bytes and returns the current full
 size in the copied record. This lets an older client read the prefix it knows

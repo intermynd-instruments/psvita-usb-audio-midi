@@ -226,7 +226,8 @@ static volatile int rx_pending;
 static volatile int tx_pending;
 static volatile uint32_t audio_pending_count;
 static volatile uint32_t audio_input_pending_count;
-static volatile int audio_enabled;
+static volatile int audio_output_enabled;
+static volatile int audio_input_enabled;
 static volatile int audio_streaming;
 static volatile int audio_input_streaming;
 static volatile int audio_requested_alternate;
@@ -237,6 +238,7 @@ static volatile uint32_t audio_alternate_requested_us;
 static volatile uint32_t audio_input_alternate_requested_us;
 static volatile uint32_t audio_stream_started_us;
 static volatile uint32_t audio_last_completion_us;
+static volatile uint32_t audio_input_last_completion_us;
 static volatile int audio_recovery_clear_fifo;
 static volatile int connected;
 static volatile int configured;
@@ -273,6 +275,7 @@ static void reset_streaming_alternates(void)
 	audio_input_requested_alternate = 0;
 	audio_input_applied_alternate = 0;
 	audio_input_alternate_requested_us = 0;
+	audio_input_last_completion_us = 0;
 }
 
 static int audio_buffer_init(void)
@@ -332,7 +335,7 @@ static void audio_buffer_term(void)
 	audio_buffers = NULL;
 }
 
-static void audio_status_init(void)
+static void audio_output_status_init(void)
 {
 	memset(&audio_status, 0, sizeof(audio_status));
 	audio_status.size = sizeof(audio_status);
@@ -344,8 +347,6 @@ static void audio_status_init(void)
 	audio_status.ring_capacity_frames = PSVITA_USB_AUDIO_RING_FRAMES;
 	audio_status.minimum_buffered_frames = PSVITA_USB_AUDIO_RING_FRAMES;
 	psvita_usb_audio_ring_init(&audio_ring, PSVITA_USB_AUDIO_STREAM_CHANNELS);
-	psvita_usb_audio_ring_init(&audio_input_ring,
-		PSVITA_USB_AUDIO_INPUT_CHANNELS);
 	psvita_usb_audio_packet_clock_init(&audio_clock);
 	psvita_usb_audio_completion_clock_init(&audio_completion_clock);
 	audio_submit_endpoint_number = -1;
@@ -355,6 +356,10 @@ static void audio_status_init(void)
 	audio_stream_started_us = 0;
 	audio_last_completion_us = 0;
 	audio_recovery_clear_fifo = 0;
+}
+
+static void audio_input_status_init(void)
+{
 	memset(&audio_input_status, 0, sizeof(audio_input_status));
 	audio_input_status.size = sizeof(audio_input_status);
 	audio_input_status.protocol_version = PSVITA_USB_AUDIO_PROTOCOL_VERSION;
@@ -366,10 +371,18 @@ static void audio_status_init(void)
 		PSVITA_USB_AUDIO_INPUT_RING_FRAMES;
 	audio_input_status.minimum_buffered_frames =
 		PSVITA_USB_AUDIO_INPUT_RING_FRAMES;
+	psvita_usb_audio_ring_init(&audio_input_ring,
+		PSVITA_USB_AUDIO_INPUT_CHANNELS);
 	audio_input_submit_endpoint_number = -1;
 	audio_input_requested_alternate = 0;
 	audio_input_applied_alternate = 0;
 	audio_input_alternate_requested_us = 0;
+}
+
+static void audio_status_init(void)
+{
+	audio_output_status_init();
+	audio_input_status_init();
 }
 
 static void audio_pending_clear(void)
@@ -492,7 +505,7 @@ static void audio_complete(SceUdcdDeviceRequest *request)
 			audio_status.bytes_transmitted += (uint32_t)request->transmitted;
 		else
 			audio_status.zero_byte_completions++;
-	} else if (audio_enabled && connected && configured && audio_streaming) {
+	} else if (audio_output_enabled && connected && configured && audio_streaming) {
 		audio_status.completion_errors++;
 		audio_status.last_error = request->returnCode;
 	}
@@ -525,6 +538,14 @@ static void audio_input_complete(SceUdcdDeviceRequest *request)
 		return;
 	}
 	if (!canceled && request->returnCode >= 0) {
+		uint32_t completion_us = audio_now_us();
+		if (audio_input_last_completion_us) {
+			uint32_t gap_us = completion_us - audio_input_last_completion_us;
+			audio_input_status.last_completion_gap_us = gap_us;
+			if (gap_us > audio_input_status.maximum_completion_gap_us)
+				audio_input_status.maximum_completion_gap_us = gap_us;
+		}
+		audio_input_last_completion_us = completion_us;
 		uint32_t bytes = (uint32_t)request->transmitted;
 		uint32_t frame_bytes =
 			PSVITA_USB_AUDIO_INPUT_CHANNELS * sizeof(int16_t);
@@ -548,7 +569,7 @@ static void audio_input_complete(SceUdcdDeviceRequest *request)
 			audio_input_status.packets_completed++;
 			if (frames < 47u) audio_input_status.short_packets++;
 		}
-	} else if (!canceled && audio_enabled && connected && configured &&
+	} else if (!canceled && audio_input_enabled && connected && configured &&
 	           audio_input_streaming) {
 		audio_input_status.completion_errors++;
 		audio_input_status.last_error = request->returnCode;
@@ -625,10 +646,16 @@ static int apply_audio_input_streaming_alternate(int alternate)
 	}
 	audio_input_streaming = streaming;
 	if (!audio_input_streaming) {
+		audio_input_last_completion_us = 0;
 		audio_input_cancel_requests();
 		ksceUdcdClearFIFO(&endpoints[AUDIO_INPUT_ENDPOINT_INDEX]);
 		audio_input_ring.read_frame = audio_input_ring.write_frame;
 	} else {
+		audio_input_last_completion_us = 0;
+		audio_input_status.last_completion_gap_us = 0;
+		audio_input_status.maximum_completion_gap_us = 0;
+		audio_input_status.last_rearm_delay_us = 0;
+		audio_input_status.maximum_rearm_delay_us = 0;
 		audio_input_ring.read_frame = audio_input_ring.write_frame;
 		midi_kernel_usb_audio_ready();
 	}
@@ -846,7 +873,8 @@ void midi_usb_audio_reset(void)
 	audio_cancel_requests();
 	audio_input_cancel_requests();
 	audio_pending_clear();
-	audio_enabled = 0;
+	audio_output_enabled = 0;
+	audio_input_enabled = 0;
 	audio_streaming = 0;
 	audio_input_streaming = 0;
 	audio_status_init();
@@ -854,38 +882,59 @@ void midi_usb_audio_reset(void)
 
 void midi_usb_audio_set_enabled(int enabled)
 {
-	if (!!enabled == !!audio_enabled) return;
-	audio_enabled = !!enabled;
-	if (audio_enabled) {
-		audio_status_init();
+	midi_usb_audio_set_output_enabled(enabled);
+	midi_usb_audio_set_input_enabled(enabled);
+}
+
+void midi_usb_audio_set_output_enabled(int enabled)
+{
+	if (!!enabled == !!audio_output_enabled) return;
+	audio_output_enabled = !!enabled;
+	if (audio_output_enabled) {
+		audio_output_status_init();
 		audio_status.state = PSVITA_USB_AUDIO_STATE_IDLE;
 		audio_status.last_error = 0;
+		midi_kernel_usb_audio_ready();
+	} else {
+		audio_cancel_requests();
+		ksceUdcdClearFIFO(&endpoints[AUDIO_ENDPOINT_INDEX]);
+		audio_ring.read_frame = audio_ring.write_frame;
+		audio_status.state = PSVITA_USB_AUDIO_STATE_DISABLED;
+	}
+}
+
+void midi_usb_audio_set_input_enabled(int enabled)
+{
+	if (!!enabled == !!audio_input_enabled) return;
+	audio_input_enabled = !!enabled;
+	if (audio_input_enabled) {
 		audio_input_status.state = PSVITA_USB_AUDIO_STATE_IDLE;
 		audio_input_status.last_error = 0;
 		midi_kernel_usb_audio_ready();
 	} else {
-		audio_cancel_requests();
 		audio_input_cancel_requests();
-		ksceUdcdClearFIFO(&endpoints[AUDIO_ENDPOINT_INDEX]);
 		ksceUdcdClearFIFO(&endpoints[AUDIO_INPUT_ENDPOINT_INDEX]);
-		audio_ring.read_frame = audio_ring.write_frame;
 		audio_input_ring.read_frame = audio_input_ring.write_frame;
-		audio_status.state = PSVITA_USB_AUDIO_STATE_DISABLED;
 		audio_input_status.state = PSVITA_USB_AUDIO_STATE_DISABLED;
 	}
 }
 
-int midi_usb_audio_enabled(void) { return audio_enabled; }
+int midi_usb_audio_enabled(void)
+{
+	return audio_output_enabled || audio_input_enabled;
+}
+int midi_usb_audio_output_enabled(void) { return audio_output_enabled; }
+int midi_usb_audio_input_enabled(void) { return audio_input_enabled; }
 
 uint32_t midi_usb_audio_write(const int16_t *interleaved, uint32_t frames)
 {
-	if (!audio_enabled) return 0;
+	if (!audio_output_enabled) return 0;
 	return psvita_usb_audio_ring_write(&audio_ring, interleaved, frames);
 }
 
 int midi_usb_audio_submit_next(void)
 {
-	if (!audio_enabled || !connected || !configured || !audio_buffers)
+	if (!audio_output_enabled || !connected || !configured || !audio_buffers)
 		return 0;
 	uint32_t now_us = audio_now_us();
 	if (!audio_streaming) {
@@ -1006,7 +1055,7 @@ int midi_usb_audio_submit_next(void)
 
 int midi_usb_audio_input_submit_next(void)
 {
-	if (!audio_enabled || !connected || !configured || !audio_input_buffers)
+	if (!audio_input_enabled || !connected || !configured || !audio_input_buffers)
 		return 0;
 	uint32_t now_us = audio_now_us();
 	if (!audio_input_streaming) {
@@ -1033,6 +1082,12 @@ int midi_usb_audio_input_submit_next(void)
 		request->attributes = SCE_UDCD_DEVICE_REQUEST_ATTR_PHYCONT;
 		request->size = AUDIO_INPUT_BUFFER_BYTES;
 		request->onComplete = audio_input_complete;
+		if (audio_input_last_completion_us) {
+			uint32_t rearm_us = now_us - audio_input_last_completion_us;
+			audio_input_status.last_rearm_delay_us = rearm_us;
+			if (rearm_us > audio_input_status.maximum_rearm_delay_us)
+				audio_input_status.maximum_rearm_delay_us = rearm_us;
+		}
 		audio_input_submit_endpoint_number =
 			endpoints[AUDIO_INPUT_ENDPOINT_INDEX].endpointNumber;
 		psvita_usb_audio_request_publish(
@@ -1054,7 +1109,7 @@ int midi_usb_audio_input_submit_next(void)
 
 void midi_usb_audio_note_worker_lock_wait(uint32_t wait_us)
 {
-	if (!audio_enabled || !audio_streaming) return;
+	if (!audio_output_enabled || !audio_streaming) return;
 	audio_status.last_worker_lock_wait_us = wait_us;
 	if (wait_us > audio_status.maximum_worker_lock_wait_us)
 		audio_status.maximum_worker_lock_wait_us = wait_us;
@@ -1102,12 +1157,12 @@ void midi_usb_audio_get_status(PsvitaUsbAudioStatus *out)
 			break;
 		}
 	}
-	if (audio_enabled) out->flags |= PSVITA_USB_AUDIO_STATUS_ENABLED;
+	if (audio_output_enabled) out->flags |= PSVITA_USB_AUDIO_STATUS_ENABLED;
 	if (connected) out->flags |= PSVITA_USB_AUDIO_STATUS_HOST_CONNECTED;
 	if (configured) out->flags |= PSVITA_USB_AUDIO_STATUS_CONFIGURED;
 	if (audio_streaming) out->flags |= PSVITA_USB_AUDIO_STATUS_HOST_STREAMING;
 	if (audio_pending_count) out->flags |= PSVITA_USB_AUDIO_STATUS_REQUEST_PENDING;
-	if (!audio_enabled) out->state = PSVITA_USB_AUDIO_STATE_DISABLED;
+	if (!audio_output_enabled) out->state = PSVITA_USB_AUDIO_STATE_DISABLED;
 	else if (connected && configured && audio_streaming)
 		out->state = PSVITA_USB_AUDIO_STATE_STREAMING;
 	else if (connected) out->state = PSVITA_USB_AUDIO_STATE_CONNECTED;
@@ -1116,7 +1171,7 @@ void midi_usb_audio_get_status(PsvitaUsbAudioStatus *out)
 
 uint32_t midi_usb_audio_input_read(int16_t *interleaved, uint32_t frames)
 {
-	if (!audio_enabled || !interleaved || !frames) return 0;
+	if (!audio_input_enabled || !interleaved || !frames) return 0;
 	return psvita_usb_audio_ring_read_silence(&audio_input_ring,
 		interleaved, frames);
 }
@@ -1142,7 +1197,7 @@ void midi_usb_audio_input_get_status(PsvitaUsbAudioInputStatus *out)
 		(uint32_t)endpoints[AUDIO_INPUT_ENDPOINT_INDEX].transmittedBytes;
 	out->requested_alternate = audio_input_requested_alternate;
 	out->applied_alternate = audio_input_applied_alternate;
-	if (audio_enabled)
+	if (audio_input_enabled)
 		out->flags |= PSVITA_USB_AUDIO_INPUT_STATUS_ENABLED;
 	if (connected)
 		out->flags |= PSVITA_USB_AUDIO_INPUT_STATUS_HOST_CONNECTED;
@@ -1152,7 +1207,7 @@ void midi_usb_audio_input_get_status(PsvitaUsbAudioInputStatus *out)
 		out->flags |= PSVITA_USB_AUDIO_INPUT_STATUS_HOST_STREAMING;
 	if (audio_input_pending_count)
 		out->flags |= PSVITA_USB_AUDIO_INPUT_STATUS_REQUEST_PENDING;
-	if (!audio_enabled)
+	if (!audio_input_enabled)
 		out->state = PSVITA_USB_AUDIO_STATE_DISABLED;
 	else if (connected && configured && audio_input_streaming)
 		out->state = PSVITA_USB_AUDIO_STATE_STREAMING;

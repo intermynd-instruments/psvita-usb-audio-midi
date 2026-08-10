@@ -39,6 +39,18 @@ over one USB connection.
 [Learn more about DS-8](https://intermynd-instruments.com/ds8.html) or
 [download it from Itch.io](https://intermynd-instruments.itch.io/ds-8).
 
+### DS-8 compatibility
+
+Use the plugin release that matches your DS-8 version:
+
+| Plugin version | DS-8 version | Notes |
+| --- | --- | --- |
+| `v0.2` | `v0.7.x` | Current release |
+| `v0.1.1` | `v0.6.x` | Recommended for DS-8 0.6 |
+| `v0.1` | Early `v0.6.x` releases | Superseded by `v0.1.1` |
+
+Plugin `v0.2` uses a newer API and is not compatible with DS-8 `v0.6.x`.
+
 ## Links
 
 - [Intermynd Instruments website](https://intermynd-instruments.com/)

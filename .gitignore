@@ -5,3 +5,4 @@
 *.suprx
 *.a
 *.o
+.DS_Store
